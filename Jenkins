@@ -1,17 +1,35 @@
-    pipeline {
+pipeline {
   environment {
-    registry = "mujeer472/nginx"
+    registry = "mujeer472/test"
     registryCredential = 'Docker-Hub'
+    dockerImage = ''
   }
   agent any
   stages {
+    stage('Cloning Git') {
+      steps {
+        git 'https://github.com/gustavoapolinario/microservices-node-example-todo-frontend.git'
+      }
+    }
     stage('Building image') {
       steps{
         script {
-          docker.build registry + ":$BUILD_NUMBER"
-          docker.push registry + ":$BUILD_NUMBER"
-      
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
+      }
+    }
+    stage('Deploy Image') {
+      steps{
+        script {
+          docker.withRegistry( '', registryCredential ) {
+            dockerImage.push()
+          }
+        }
+      }
+    }
+    stage('Remove Unused docker image') {
+      steps{
+        sh "docker rmi $registry:$BUILD_NUMBER"
       }
     }
   }
